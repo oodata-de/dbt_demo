@@ -1,0 +1,11 @@
+dbt_demo:
+  target: dev
+  outputs:
+    dev:
+      type: snowflake
+      account: 'not needed'
+      user: 'not needed'
+      role: SYSADMIN
+      database: DBT_DEV
+      schema: SCH_DBT_TEST
+      warehouse: DEVELOPMENT_WH
