@@ -1,0 +1,3 @@
+packages:
+  - git: "https://github.com/oodata-de/dbt_parent_project.git"
+    revision: main

@@ -3,6 +3,11 @@ name: 'dbt_demo'
 version: '1.0.0'
 config-version: 2
 
+dispatch:
+  - macro_namespace: dbt
+    search_order: ['dbt_demo_core', 'dbt_demo', 'dbt_utils', 'dbt']
+
+
 # This setting configures which "profile" dbt uses for this project.
 profile: 'dbt_demo'
 
@@ -18,9 +23,13 @@ clean-targets:         # directories to be removed by `dbt clean`
   - "target"
   - "dbt_packages"
 
+
 models:
   dbt_demo:
     +materialized: table
+    +schema: sch_dbt_test
     # Applies to all files under models/example/
     # example:
     #   +materialized: table
+
+
