@@ -26,10 +26,12 @@ jobs:
         run: snow --version
 
       - name: Set DBT project directory
-        run: echo "DBT_PROJECT_DIR=$GITHUB_WORKSPACE/dbt_demo" >> $GITHUB_ENV
+        run: |
+          echo "DBT_PROJECT_DIR=$GITHUB_WORKSPACE" >> $GITHUB_ENV
+          printf '%s' "$DBT_PROJECT_DIR"
 
       - name: Set DBT profiles directory
-        run: echo "DBT_PROFILES_DIR=$GITHUB_WORKSPACE/dbt_demo" >> $GITHUB_ENV
+        run: echo "DBT_PROFILES_DIR=$GITHUB_WORKSPACE" >> $GITHUB_ENV
 
       - name: Create private key file
         run: |
