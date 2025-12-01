@@ -1,0 +1,86 @@
+version: 2
+
+models:
+
+  - name: d1
+    description: d1
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: id
+        description: id description
+        data_type: integer
+        constraints:
+          - type: primary_key
+      - name: r1_val
+        description: r1_val description
+        data_type: varchar(200)
+      - name: r2_val
+        description: r2_val description
+        data_type: varchar(200)
+
+  - name: d2
+    description: d2
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: id
+        description: id description
+        data_type: integer
+      - name: r2_val
+        description: r2_val description
+        data_type: varchar(200)
+        constraints:
+          - type: primary_key
+      - name: r3_val
+        description: r3_val description
+        data_type: varchar(200)
+
+  - name: f1
+    description: f1
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: id
+        description: id description
+        data_type: integer
+        constraints:
+          - type: primary_key
+      - name: val
+        description: value description
+        data_type: varchar(200)
+      - name: r1_val
+        description: r1_val description
+        data_type: varchar(200)
+      - name: r2_val
+        description: r2_val description
+        data_type: varchar(200)
+        constraints:
+          - type: foreign_key
+            to: ref('d2') 
+            to_columns: [r2_val]
+
+
+  - name: f2
+    description: f2
+    config:
+      contract:
+        enforced: true
+    constraints:
+      - type: primary_key
+        columns: ['id', 'r1_val'] 
+    columns:
+      - name: id
+        description: id description
+        data_type: integer
+      - name: r1_val
+        description: value description
+        data_type: varchar(200)
+      - name: r3_val
+        data_type: varchar(200)
+      - name: r4_val
+        description: r4_val description
+        data_type: varchar(200)

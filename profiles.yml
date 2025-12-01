@@ -1,11 +1,20 @@
-dbt_demo:
-  target: dev
+default:
   outputs:
-    dev:
-      type: snowflake
-      account: 'not needed'
-      user: 'not needed'
-      role: SYSADMIN
-      database: DBT_DEV
-      schema: SCH_DBT_TEST
-      warehouse: DEVELOPMENT_WH
+  target: dev
+  dev:
+    type: snowflake
+    account: not_needed # Put any value here, it will be overwritten by a GitHub Repo Secret
+    database: DBT_DEV # Change this value here (or <your_user_name>_dbt_DB_DEV if you cloned a database for dev)
+    schema: SCH_DBT_TEST     
+    role: SYSADMIN # Use whichever role has USAGE on the database and schema
+    warehouse: DEVELOPMENT # Replace with your active warehouse name, e.g., CICD_WH
+    user: not_needed  # Put any value here, it will be overwritten by a GitHub Repo Secret
+  prod:
+    type: snowflake
+    account: not_needed 
+    database: DBT_PROD
+    schema: SCH_DBT_TEST
+    role: SYSADMIN 
+    warehouse: PRODUCTION
+    user: not_needed 
+    query_tag: demo_dbt_prod
