@@ -5,10 +5,6 @@ on:
     types: [opened, synchronize, reopened, ready_for_review] 
     branches: [main]
 
-permissions:
-  contents: read
-  id-token: write
-
 jobs:
   run-snowflake-test-dbt-job:
     name: "Run on Incoming PR"
@@ -17,8 +13,9 @@ jobs:
     env: 
       SNOWFLAKE_CLI_FEATURES_ENABLE_DBT: true
       SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
-      SNOWFLAKE_DATABASE: ${{ vars.SNOWFLAKE_DATABASE_DEV }}
       SNOWFLAKE_SCHEMA: ${{ vars.SNOWFLAKE_SCHEMA }}
+      SNOWFLAKE_PRIVATE_KEY: ${{ secrets.SNOWFLAKE_PRIVATE_KEY }}
+      SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
 
     steps:
       # Check out repository code
@@ -28,28 +25,40 @@ jobs:
 
       - name: Install Snowflake CLI
         uses: snowflakedb/snowflake-cli-action@v2.0
-        with: # Ensures Snowflake CLI will search for OIDC users matching this subject
-          use-oidc: true
         
       - name: Check Snowflake CLI Version
         run: snow --version
 
-      - name: List all users with OIDC federation enabled on your account
-        run: snow auth oidc list -x
+      - name: Create private key file
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/.secrets"
+          # preserve newlines safely
+          printf '%s' "$SNOWFLAKE_PRIVATE_KEY" > "$GITHUB_WORKSPACE/.secrets/snowflake_key.p8"
+          chmod 600 "$GITHUB_WORKSPACE/.secrets/snowflake_key.p8"
+          # expose the path to subsequent steps
+          echo "SNOWFLAKE_PRIVATE_KEY_PATH=$GITHUB_WORKSPACE/.secrets/snowflake_key.p8" >> $GITHUB_ENV
+        shell: bash
+
+      - name: CHnage to directory
+        run: cd $DBT_PROJECT_DIR
       
       # The -x is short hand for --temporary-connection
-      - run: snow connection test -x
+      - name: Test connection
+        run: snow connection test -x
+
+      - name: Install dbt dependencies
+        run: dbt deps
 
       # The --force setting creates the object or updates it if it already exists
       # You can remove the "-- source" flag if your dbt_project.yml is at root of your repo
-      - name: Create a new TESTER dbt project object in ${{ vars.SNOWFLAKE_ACCOUNT }} on ${{ vars.SNOWFLAKE_DATABASE }}.${{ vars.SNOWFLAKE_SCHEMA }}
+      - name: Create a new TESTER dbt project object in ${{ vars.SNOWFLAKE_ACCOUNT }} 
         run: snow dbt deploy TESTER_dbt_object_gh_action --force -x
           
       - name: List all of the snowflake dbt project objects on ${{ vars.SNOWFLAKE_ACCOUNT }}
         run: snow dbt list -x
       
-      - name: Execute run on TESTER dbt project object in ${{ vars.SNOWFLAKE_ACCOUNT }} on ${{ vars.SNOWFLAKE_DATABASE }}.${{ vars.SNOWFLAKE_SCHEMA }}
+      - name: Execute run on TESTER dbt project object in ${{ vars.SNOWFLAKE_ACCOUNT }} 
         run: snow dbt execute -x TESTER_dbt_object_gh_action run --select path:models\example\dependency --target dev
 
-      - name: Execute data quality test on TESTER dbt project object in ${{ vars.SNOWFLAKE_ACCOUNT }} on ${{ vars.SNOWFLAKE_DATABASE }}.${{ vars.SNOWFLAKE_SCHEMA }}
+      - name: Execute data quality test on TESTER dbt project object in ${{ vars.SNOWFLAKE_ACCOUNT }}
         run: snow dbt execute -x TESTER_dbt_object_gh_action test --select path:models\example\dependency --target dev
