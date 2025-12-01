@@ -66,16 +66,32 @@ $$;
 SET db_name = '&{DB_NAME}';
 MERGE INTO sch_dbt_test.dbt_model_run_selector AS target
 USING (
-SELECT *
-  FROM  
-    (VALUES
-      ('f1','sch_dbt_test','f1','individual','USING CRON 0 23 * * * Canada/Pacific', CONCAT($db_name, '.sch_dbt_test.dbt_object_gh_action'),'prod',TRUE),
-      ('domain_dependency','sch_dbt_test','path:models/example/dependency','group', 'USING CRON 0 23 * * * Canada/Pacific', CONCAT($db_name, '.sch_dbt_test.dbt_object_gh_action'),'prod',TRUE)
-  ) AS source
-ON target.task_name = source.task_name AND target.task_schema = source.task_schema
+    SELECT
+        'f1' AS task_name,
+        'sch_dbt_test' AS task_schema,
+        'f1' AS run_selector,
+        'individual' AS run_type,
+        'USING CRON 0 1 * * * Canada/Pacific' AS cron_expression,
+        CONCAT($db_name, '.sch_dbt_test.dbt_object_gh_action') AS dbt_project,
+        'prod' AS env,
+        TRUE AS is_active
+    UNION ALL
+    SELECT
+        'domain_dependency',
+        'sch_dbt_test',
+        'path:models/example/dependency',
+        'group',
+        'USING CRON 0 1 * * * Canada/Pacific',
+        CONCAT($db_name, '.sch_dbt_test.dbt_object_gh_action'),
+        'prod',
+        TRUE
+) source
+ON target.task_name = source.task_name
+ AND target.task_schema = source.task_schema
 WHEN NOT MATCHED THEN
   INSERT (task_name, task_schema, run_selector, run_type, cron_expression, dbt_project, env, is_active)
-  VALUES (source.task_name, source.task_schema, source.run_selector, source.run_type, source.cron_expression, source.dbt_project, source.env, source.is_active);
+  VALUES (source.task_name, source.task_schema, source.run_selector, source.run_type,
+          source.cron_expression, source.dbt_project, source.env, source.is_active);
 
 -- Call the stored procedure
 CALL  dbt_prod.sch_dbt_test.sync_dbt_tasks(&{DB_NAME});
