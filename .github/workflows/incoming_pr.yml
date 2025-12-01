@@ -47,6 +47,9 @@ jobs:
       - name: list files in directory
         run: ls $DBT_PROJECT_DIR
 
+      - name: Install dbt dependencies
+        run: dbt deps
+
       - name: Execute Snowflake CLI command
         env:
           SNOWFLAKE_AUTHENTICATOR: SNOWFLAKE_JWT
