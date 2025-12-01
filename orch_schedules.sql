@@ -53,7 +53,7 @@ BEGIN
         v_args := v_args || ' --target ' || rec.env;
 
         v_sql := 'CREATE OR REPLACE TASK dbt_prod.' || v_task_schema || '.' || v_task_name || '
-                  WAREHOUSE = BBYC_SNOW_VW_NONPROD_LOW_TSK_1_01
+                  WAREHOUSE = COMPUTE_WH
                   SCHEDULE = ''' || rec.cron_expression || '''
                   USER_TASK_TIMEOUT_MS = 3600000
                   AS
