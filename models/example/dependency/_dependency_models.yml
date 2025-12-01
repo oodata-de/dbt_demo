@@ -17,7 +17,7 @@ models:
         description: r1_val description
         data_type: varchar(200)
       - name: r2_val
-        description: r2_val description
+        description: r2_val descriptions
         data_type: varchar(200)
 
   - name: d2
