@@ -9,13 +9,7 @@ jobs:
   run-snowflake-test-dbt-job:
     name: "Run on Incoming PR"
     runs-on: ubuntu-latest
-    # environment: prod # the name of this environment must match the subject of the OIDC user
-    env: 
-      SNOWFLAKE_CLI_FEATURES_ENABLE_DBT: true
-      SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
-      SNOWFLAKE_SCHEMA: ${{ vars.SNOWFLAKE_SCHEMA }}
-      SNOWFLAKE_PRIVATE_KEY: ${{ secrets.SNOWFLAKE_PRIVATE_KEY }}
-      SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+    # environment: prod # the name of this environment must match the subject of the OIDC use
 
     steps:
       # Check out repository code
@@ -39,25 +33,22 @@ jobs:
           echo "SNOWFLAKE_PRIVATE_KEY_PATH=$GITHUB_WORKSPACE/.secrets/snowflake_key.p8" >> $GITHUB_ENV
         shell: bash
 
-      - name: CHnage to directory
+      - name: Chaange to directory
         run: cd $DBT_PROJECT_DIR
-      
-      - name: Test connection
-        run: snow connection test --temporary-connection --account $SNOWFLAKE_ACCOUNT --user $SNOWFLAKE_USER --role $SNOWFLAKE_ROLE --warehouse $SNOWFLAKE_WAREHOUSE --database $SNOWFLAKE_DATABASE --schema $SNOWFLAKE_SCHEMA
 
-      - name: Install dbt dependencies
-        run: dbt deps
-
-      # The --force setting creates the object or updates it if it already exists
-      # You can remove the "-- source" flag if your dbt_project.yml is at root of your repo
-      - name: Create a new TESTER dbt project object in ${{ vars.SNOWFLAKE_ACCOUNT }} 
-        run: snow dbt deploy TESTER_dbt_object_gh_action --force -x
-          
-      - name: List all of the snowflake dbt project objects on ${{ vars.SNOWFLAKE_ACCOUNT }}
-        run: snow dbt list -x
-      
-      - name: Execute run on TESTER dbt project object in ${{ vars.SNOWFLAKE_ACCOUNT }} 
-        run: snow dbt execute -x TESTER_dbt_object_gh_action run --select path:models\example\dependency --target dev
-
-      - name: Execute data quality test on TESTER dbt project object in ${{ vars.SNOWFLAKE_ACCOUNT }}
-        run: snow dbt execute -x TESTER_dbt_object_gh_action test --select path:models\example\dependency --target dev
+      - name: Execute Snowflake CLI command
+        env:
+          SNOWFLAKE_AUTHENTICATOR: SNOWFLAKE_JWT
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_SCHEMA: ${{ vars.SNOWFLAKE_SCHEMA }}
+          SNOWFLAKE_PRIVATE_KEY_RAW: ${{ secrets.SNOWFLAKE_PRIVATE_KEY }}
+          SNOWFLAKE_PRIVATE_KEY: ${{ secrets.SNOWFLAKE_PRIVATE_KEY }}
+          SNOWFLAKE_CLI_FEATURES_ENABLE_DBT: true
+        run: |
+          snow --help
+          snow connection test -x
+          snow dbt deploy TESTER_dbt_object_gh_action --force -x
+          snow dbt list -x
+          snow dbt execute -x TESTER_dbt_object_gh_action run --select path:models\example\dependency --target dev
+          snow dbt execute -x TESTER_dbt_object_gh_action test --select path:models\example\dependency --target dev
