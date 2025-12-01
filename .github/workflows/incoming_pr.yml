@@ -26,9 +26,7 @@ jobs:
         run: snow --version
 
       - name: Set DBT project directory
-        run: |
-          echo "DBT_PROJECT_DIR=$GITHUB_WORKSPACE" >> $GITHUB_ENV
-          printf '%s' "$DBT_PROJECT_DIR"
+        run: echo "DBT_PROJECT_DIR=$GITHUB_WORKSPACE" >> $GITHUB_ENV
 
       - name: Set DBT profiles directory
         run: echo "DBT_PROFILES_DIR=$GITHUB_WORKSPACE" >> $GITHUB_ENV
@@ -46,6 +44,9 @@ jobs:
       - name: Change to directory
         run: cd $DBT_PROJECT_DIR
 
+      - name: list files in directory
+        run: ls $DBT_PROJECT_DIR
+
       - name: Execute Snowflake CLI command
         env:
           SNOWFLAKE_AUTHENTICATOR: SNOWFLAKE_JWT
@@ -58,7 +59,7 @@ jobs:
         run: |
           snow --help
           snow connection test -x
-          snow dbt deploy -x test_dbt_object_gh_action --force --source ${{ env.SDBT_PROJECT_DIR }} --profiles ${{ env.SDBT_PROFILES_DIR }}
+          snow dbt deploy -x test_dbt_object_gh_action --force --source ${{ env.DBT_PROJECT_DIR }} --profiles ${{ env.DBT_PROFILES_DIR }}
           snow dbt list -x
           snow dbt execute -x test_dbt_object_gh_action run --select path:models\example\dependency --default-target dev
           snow dbt execute -x test_dbt_object_gh_action test --select path:models\example\dependency --default-target dev
