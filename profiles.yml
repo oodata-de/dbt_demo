@@ -9,6 +9,7 @@ dbt_demo:
     role: SYSADMIN # Use whichever role has USAGE on the database and schema
     warehouse: DEVELOPMENT # Replace with your active warehouse name, e.g., CICD_WH
     user: ${SNOWFLAKE_USER}  # Put any value here, it will be overwritten by a GitHub Repo Secret
+    authenticator: SNOWFLAKE_JWT
     PRIVATE_KEY_PATH: ${SNOWFLAKE_PRIVATE_KEY_PATH}
     query_tag: demo_dbt_dev
   prod:
@@ -19,5 +20,6 @@ dbt_demo:
     role: SYSADMIN 
     warehouse: PRODUCTION
     user: ${SNOWFLAKE_USER}
+    authenticator: SNOWFLAKE_JWT
     PRIVATE_KEY_PATH: ${SNOWFLAKE_PRIVATE_KEY_PATH}
     query_tag: demo_dbt_prod
