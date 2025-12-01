@@ -25,6 +25,12 @@ jobs:
       - name: Check Snowflake CLI Version
         run: snow --version
 
+      - name: Set DBT project directory
+        run: echo "DBT_PROJECT_DIR=$GITHUB_WORKSPACE/dbt_demo_core" >> $GITHUB_ENV
+
+      - name: Set DBT profiles directory
+        run: echo "DBT_PROFILES_DIR=$GITHUB_WORKSPACE/" >> $GITHUB_ENV
+
       - name: Create private key file
         run: |
           mkdir -p "$GITHUB_WORKSPACE/.secrets"
@@ -35,7 +41,7 @@ jobs:
           echo "SNOWFLAKE_PRIVATE_KEY_PATH=$GITHUB_WORKSPACE/.secrets/snowflake_key.p8" >> $GITHUB_ENV
         shell: bash
 
-      - name: Chaange to directory
+      - name: Change to directory
         run: cd $DBT_PROJECT_DIR
 
       - name: Execute Snowflake CLI command
@@ -50,7 +56,7 @@ jobs:
         run: |
           snow --help
           snow connection test -x
-          snow dbt deploy TESTER_dbt_object_gh_action --force -x
+          snow dbt deploy -x test_dbt_object_gh_action --force --source ${{ env.SDBT_PROJECT_DIR }} --profiles ${{ env.SDBT_PROFILES_DIR }}
           snow dbt list -x
-          snow dbt execute -x TESTER_dbt_object_gh_action run --select path:models\example\dependency --target dev
-          snow dbt execute -x TESTER_dbt_object_gh_action test --select path:models\example\dependency --target dev
+          snow dbt execute -x test_dbt_object_gh_action run --select path:models\example\dependency --default-target dev
+          snow dbt execute -x test_dbt_object_gh_action test --select path:models\example\dependency --default-target dev
