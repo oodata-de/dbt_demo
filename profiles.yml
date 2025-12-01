@@ -1,4 +1,4 @@
-default:
+dbt_demo:
   outputs:
   target: dev
   dev:
