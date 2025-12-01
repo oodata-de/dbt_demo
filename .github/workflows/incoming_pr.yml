@@ -59,7 +59,7 @@ jobs:
         run: |
           snow --help
           snow connection test -x
-          snow dbt deploy -x test_dbt_object_gh_action --force --source ${{ env.DBT_PROJECT_DIR }} --profiles ${{ env.DBT_PROFILES_DIR }}
+          snow dbt deploy -x test_dbt_object_gh_action --force --source ${{ env.DBT_PROJECT_DIR }} --profiles-dir ${{ env.DBT_PROFILES_DIR }}
           snow dbt list -x
-          snow dbt execute -x test_dbt_object_gh_action run --select path:models\example\dependency --default-target dev
-          snow dbt execute -x test_dbt_object_gh_action test --select path:models\example\dependency --default-target dev
+          snow dbt execute -x test_dbt_object_gh_action run --select path:models\example\dependency --target dev
+          snow dbt execute -x test_dbt_object_gh_action test --select path:models\example\dependency --target dev
