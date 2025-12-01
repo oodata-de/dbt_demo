@@ -1,0 +1,73 @@
+name: Incoming PR
+run-name: PR opened by ${{ github.actor }} 
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review] 
+    branches: [main]
+
+jobs:
+  run-snowflake-test-dbt-job:
+    name: "Run on Incoming PR"
+    runs-on: ubuntu-latest
+    # environment: prod # the name of this environment must match the subject of the OIDC use
+    env: 
+      SNOWFLAKE_PRIVATE_KEY: ${{ secrets.SNOWFLAKE_PRIVATE_KEY }}
+
+    steps:
+      # Check out repository code
+      # Gets the latest code from the incoming pull request
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
+      - name: Install Snowflake CLI
+        uses: snowflakedb/snowflake-cli-action@v2.0
+        
+      - name: Check Snowflake CLI Version
+        run: snow --version
+
+      - name: Set DBT project directory
+        run: echo "DBT_PROJECT_DIR=$GITHUB_WORKSPACE" >> $GITHUB_ENV
+
+      - name: Set DBT profiles directory
+        run: echo "DBT_PROFILES_DIR=$GITHUB_WORKSPACE" >> $GITHUB_ENV
+
+      - name: Create private key file
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/.secrets"
+          # preserve newlines safely
+          printf '%s' "$SNOWFLAKE_PRIVATE_KEY" > "$GITHUB_WORKSPACE/.secrets/snowflake_key.p8"
+          chmod 600 "$GITHUB_WORKSPACE/.secrets/snowflake_key.p8"
+          # expose the path to subsequent steps
+          echo "SNOWFLAKE_PRIVATE_KEY_PATH=$GITHUB_WORKSPACE/.secrets/snowflake_key.p8" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Change to directory
+        run: cd $DBT_PROJECT_DIR
+
+      - name: list files in directory
+        run: ls $DBT_PROJECT_DIR
+
+      - name: Install requirements
+        run: pip install -r requirements.txt  
+
+      - name: Install dbt dependencies
+        run: dbt deps
+
+      - name: Execute Snowflake CLI command
+        env:
+          SNOWFLAKE_AUTHENTICATOR: SNOWFLAKE_JWT
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_DATABASE: ${{ vars.SNOWFLAKE_DATABASE }}
+          SNOWFLAKE_SCHEMA: ${{ vars.SNOWFLAKE_SCHEMA }}
+          SNOWFLAKE_ROLE: SYSADMIN
+          SNOWFLAKE_PRIVATE_KEY_RAW: ${{ secrets.SNOWFLAKE_PRIVATE_KEY }}
+          SNOWFLAKE_PRIVATE_KEY_PATH: ${{ env.SNOWFLAKE_PRIVATE_KEY_PATH }}
+          SNOWFLAKE_CLI_FEATURES_ENABLE_DBT: true
+        run: |
+          snow --help
+          snow connection test --temporary-connection
+          snow dbt deploy --temporary-connection dbt_object_gh_action --force --source ${{ env.DBT_PROJECT_DIR }} --profiles-dir ${{ env.DBT_PROFILES_DIR }}
+          snow dbt list --temporary-connection
+          snow dbt execute --temporary-connection dbt_object_gh_action run --select path:models/example/dependency --target dev
+          snow sql --temporary-connection --database ${{ env.SNOWFLAKE_DATABASE }} --variable DB_NAME=${{ env.SNOWFLAKE_DATABASE }} --filename ${{ env.DBT_PROJECT_DIR }}/orch_schedules.sql
