@@ -63,7 +63,7 @@ while (rs.next()) {
 return 'Tasks created';
 $$;
 
-SET db_name = &{DB_NAME};
+SET db_name = '&{DB_NAME}';
 MERGE INTO sch_dbt_test.dbt_model_run_selector AS target
 USING (
 SELECT *
