@@ -1,0 +1,27 @@
+dbt_demo:
+  target: dev
+  outputs:
+    dev:
+      type: snowflake
+      account: ${SNOWFLAKE_ACCOUNT}
+      database: DBT_DEV
+      schema: SCH_DBT_TEST
+      role: SYSADMIN
+      warehouse: DEVELOPMENT
+      user: ${SNOWFLAKE_USER}
+      authenticator: SNOWFLAKE_JWT
+      private_key_path: ${SNOWFLAKE_PRIVATE_KEY_PATH}
+      private_key: ${SNOWFLAKE_PRIVATE_KEY_RAW}
+      query_tag: demo_dbt_dev
+    prod:
+      type: snowflake
+      account: ${SNOWFLAKE_ACCOUNT}
+      database: DBT_PROD
+      schema: SCH_DBT_TEST
+      role: SYSADMIN
+      warehouse: PRODUCTION
+      user: ${SNOWFLAKE_USER}
+      authenticator: SNOWFLAKE_JWT
+      private_key_path: ${SNOWFLAKE_PRIVATE_KEY_PATH}
+      private_key: ${SNOWFLAKE_PRIVATE_KEY_RAW}
+      query_tag: demo_dbt_prd
