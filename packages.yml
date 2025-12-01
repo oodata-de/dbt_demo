@@ -1,3 +1,7 @@
+# packages:
+#   - git: "https://github.com/oodata-de/dbt_parent_project.git"
+#     revision: main
+
 packages:
-  - git: "https://github.com/oodata-de/dbt_parent_project.git"
-    revision: main
+  - name: dbt_utils
+    package: dbt-labs/dbt_utils
