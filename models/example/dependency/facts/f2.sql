@@ -1,6 +1,5 @@
 {{ config(
-        materialized='table',
-        group='sales'
+        materialized='table'
     )
 }}
 
