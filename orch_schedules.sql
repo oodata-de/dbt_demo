@@ -1,7 +1,6 @@
-USE DATABASE DBT_PROD;
 USE SCHEMA SCH_DBT_TEST;
 
-CREATE OR REPLACE TABLE dbt_prod.sch_dbt_test.dbt_model_run_selector (
+CREATE OR REPLACE TABLE sch_dbt_test.dbt_model_run_selector (
     id NUMBER(10,0) AUTOINCREMENT START 1 INCREMENT 1,
     task_name       STRING,                     -- suffix used in DBT_TASK_<task_name>
     task_schema     STRING,
@@ -16,7 +15,7 @@ CREATE OR REPLACE TABLE dbt_prod.sch_dbt_test.dbt_model_run_selector (
 );
 
 -- Procedure that scans active selectors and creates/refreshes Snowflake tasks per selector.
-CREATE OR REPLACE PROCEDURE dbt_prod.sch_dbt_test.sync_dbt_tasks()
+CREATE OR REPLACE PROCEDURE sch_dbt_test.sync_dbt_tasks(dbt_database STRING)
 RETURNS VARCHAR
 LANGUAGE SQL
 EXECUTE AS CALLER
@@ -31,7 +30,7 @@ DECLARE
                cron_expression,
                dbt_project,
                env
-        FROM dbt_prod.sch_dbt_test.dbt_model_run_selector
+        FROM IDENTIFIER(dbt_database || '.sch_dbt_test.dbt_model_run_selector')
         WHERE is_active;
 
     v_task_name STRING;
@@ -52,7 +51,7 @@ BEGIN
         END IF;
         v_args := v_args || ' --target ' || rec.env;
 
-        v_sql := 'CREATE OR REPLACE TASK dbt_prod.' || v_task_schema || '.' || v_task_name || '
+        v_sql := 'CREATE OR REPLACE TASK ' || dbt_database || '.' || v_task_schema || '.' || v_task_name || '
                   WAREHOUSE = COMPUTE_WH
                   SCHEDULE = ''' || rec.cron_expression || '''
                   USER_TASK_TIMEOUT_MS = 3600000
@@ -62,7 +61,7 @@ BEGIN
 
         EXECUTE IMMEDIATE v_sql;
 
-        v_resume := 'ALTER TASK dbt_prod.' || v_task_schema || '.' || v_task_name || ' RESUME;';
+        v_resume := 'ALTER TASK ' || dbt_database || '.' || v_task_schema || '.' || v_task_name || ' RESUME;';
 
         EXECUTE IMMEDIATE v_resume;
         
@@ -79,11 +78,27 @@ $$;
 --     ('domain_dependency', 'sch_dbt_test', 'path:models/example/dependency', 'group', 'USING CRON 0 21 * * * Canada/Pacific', 'dbt_prod.sch_dbt_test.prod_dbt_object_gh_action', 'prod', TRUE);
 
 
-MERGE INTO dbt_prod.sch_dbt_test.dbt_model_run_selector AS target
+MERGE INTO sch_dbt_test.dbt_model_run_selector AS target
 USING (
-  VALUES
-  ('f1', 'sch_dbt_test', 'f1', 'individual', 'USING CRON 0 21 * * * Canada/Pacific', 'dbt_prod.sch_dbt_test.prod_dbt_object_gh_action', 'prod', TRUE),
-  ('domain_dependency', 'sch_dbt_test', 'path:models/example/dependency', 'group', 'USING CRON 0 21 * * * Canada/Pacific', 'dbt_prod.sch_dbt_test.prod_dbt_object_gh_action', 'prod', TRUE)
+  SELECT
+    'f1' AS task_name,
+    'sch_dbt_test' AS task_schema,
+    'f1' AS run_selector,
+    'individual' AS run_type,
+    'USING CRON 0 23 * * * Canada/Pacific' AS cron_expression,
+    &{DB_NAME} || '.sch_dbt_test.dbt_object_gh_action' AS dbt_project,
+    'prod' AS env,
+    TRUE AS is_active
+  UNION ALL
+  SELECT
+    'domain_dependency',
+    'sch_dbt_test',
+    'path:models/example/dependency',
+    'group',
+    'USING CRON 0 23 * * * Canada/Pacific',
+    &{DB_NAME} || '.sch_dbt_test.dbt_object_gh_action',
+    'prod',
+    TRUE
 ) AS source (task_name, task_schema, run_selector, run_type, cron_expression, dbt_project, env, is_active)
 ON target.task_name = source.task_name AND target.task_schema = source.task_schema
 WHEN NOT MATCHED THEN
@@ -91,4 +106,4 @@ WHEN NOT MATCHED THEN
   VALUES (source.task_name, source.task_schema, source.run_selector, source.run_type, source.cron_expression, source.dbt_project, source.env, source.is_active);
 
 -- Call the stored procedure
-CALL  dbt_prod.sch_dbt_test.sync_dbt_tasks();
+CALL  dbt_prod.sch_dbt_test.sync_dbt_tasks(&{DB_NAME});
