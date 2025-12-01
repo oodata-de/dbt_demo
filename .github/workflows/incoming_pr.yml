@@ -10,6 +10,8 @@ jobs:
     name: "Run on Incoming PR"
     runs-on: ubuntu-latest
     # environment: prod # the name of this environment must match the subject of the OIDC use
+    env: 
+      SNOWFLAKE_PRIVATE_KEY: ${{ secrets.SNOWFLAKE_PRIVATE_KEY }}
 
     steps:
       # Check out repository code
@@ -43,7 +45,7 @@ jobs:
           SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
           SNOWFLAKE_SCHEMA: ${{ vars.SNOWFLAKE_SCHEMA }}
           SNOWFLAKE_PRIVATE_KEY_RAW: ${{ secrets.SNOWFLAKE_PRIVATE_KEY }}
-          SNOWFLAKE_PRIVATE_KEY: ${{ secrets.SNOWFLAKE_PRIVATE_KEY }}
+          SNOWFLAKE_PRIVATE_KEY_PATH: ${SNOWFLAKE_PRIVATE_KEY_PATH}
           SNOWFLAKE_CLI_FEATURES_ENABLE_DBT: true
         run: |
           snow --help
