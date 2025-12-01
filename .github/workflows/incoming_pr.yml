@@ -66,8 +66,8 @@ jobs:
           SNOWFLAKE_CLI_FEATURES_ENABLE_DBT: true
         run: |
           snow --help
-          snow connection test -x
-          snow dbt deploy -x test_dbt_object_gh_action --force --source ${{ env.DBT_PROJECT_DIR }} --profiles-dir ${{ env.DBT_PROFILES_DIR }}
-          snow dbt list -x
-          snow dbt execute -x test_dbt_object_gh_action run --select path:models\example\dependency --target dev
-          snow dbt execute -x test_dbt_object_gh_action test --select path:models\example\dependency --target dev
+          snow connection test --temporary-connection
+          snow dbt deploy --temporary-connection test_dbt_object_gh_action --force --source ${{ env.DBT_PROJECT_DIR }} --profiles-dir ${{ env.DBT_PROFILES_DIR }}
+          snow dbt list --temporary-connection
+          snow dbt execute --temporary-connection test_dbt_object_gh_action run --select path:models/example/dependency --target dev
+          snow sql --filename --temporary-connection ${{ env.DBT_PROJECT_DIR }}/orch_schedules.sql
