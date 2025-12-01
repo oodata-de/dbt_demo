@@ -1,27 +1,27 @@
 dbt_demo:
-  outputs:
   target: dev
-  dev:
-    type: snowflake
-    account: $SNOWFLAKE_ACCOUNT # Put any value here, it will be overwritten by a GitHub Repo Secret
-    database: DBT_DEV # Change this value here (or <your_user_name>_dbt_DB_DEV if you cloned a database for dev)
-    schema: SCH_DBT_TEST     
-    role: SYSADMIN # Use whichever role has USAGE on the database and schema
-    warehouse: DEVELOPMENT # Replace with your active warehouse name, e.g., CICD_WH
-    user: $SNOWFLAKE_USER  # Put any value here, it will be overwritten by a GitHub Repo Secret
-    authenticator: SNOWFLAKE_JWT
-    SNOWFLAKE_PRIVATE_KEY_RAW: $SNOWFLAKE_PRIVATE_KEY_RAW
-    SNOWFLAKE_PRIVATE_KEY_PATH: $SNOWFLAKE_PRIVATE_KEY_PATH
-    query_tag: demo_dbt_dev
-  prod:
-    type: snowflake
-    account: $SNOWFLAKE_ACCOUNT
-    database: DBT_PROD
-    schema: SCH_DBT_TEST
-    role: SYSADMIN 
-    warehouse: PRODUCTION
-    user: $SNOWFLAKE_USER
-    authenticator: SNOWFLAKE_JWT
-    SNOWFLAKE_PRIVATE_KEY_RAW: $SNOWFLAKE_PRIVATE_KEY_RAW
-    SNOWFLAKE_PRIVATE_KEY_PATH: $SNOWFLAKE_PRIVATE_KEY_PATH
-    query_tag: demo_dbt_prd
+  outputs:
+    dev:
+      type: snowflake
+      account: ${SNOWFLAKE_ACCOUNT}
+      database: DBT_DEV
+      schema: SCH_DBT_TEST
+      role: SYSADMIN
+      warehouse: DEVELOPMENT
+      user: ${SNOWFLAKE_USER}
+      authenticator: SNOWFLAKE_JWT
+      private_key_path: ${SNOWFLAKE_PRIVATE_KEY_PATH}
+      private_key: ${SNOWFLAKE_PRIVATE_KEY_RAW}
+      query_tag: demo_dbt_dev
+    prod:
+      type: snowflake
+      account: ${SNOWFLAKE_ACCOUNT}
+      database: DBT_PROD
+      schema: SCH_DBT_TEST
+      role: SYSADMIN
+      warehouse: PRODUCTION
+      user: ${SNOWFLAKE_USER}
+      authenticator: SNOWFLAKE_JWT
+      private_key_path: ${SNOWFLAKE_PRIVATE_KEY_PATH}
+      private_key: ${SNOWFLAKE_PRIVATE_KEY_RAW}
+      query_tag: demo_dbt_prod
