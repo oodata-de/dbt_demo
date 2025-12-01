@@ -67,7 +67,7 @@ jobs:
         run: |
           snow --help
           snow connection test --temporary-connection
-          snow dbt deploy --temporary-connection test_dbt_object_gh_action --force --source ${{ env.DBT_PROJECT_DIR }} --profiles-dir ${{ env.DBT_PROFILES_DIR }}
+          snow dbt deploy --temporary-connection dbt_object_gh_action --force --source ${{ env.DBT_PROJECT_DIR }} --profiles-dir ${{ env.DBT_PROFILES_DIR }}
           snow dbt list --temporary-connection
-          snow dbt execute --temporary-connection test_dbt_object_gh_action run --select path:models/example/dependency --target dev
+          snow dbt execute --temporary-connection dbt_object_gh_action run --select path:models/example/dependency --target dev
           snow sql --temporary-connection --database DB_NAME=${{ env.SNOWFLAKE_DATABASE }} --filename ${{ env.DBT_PROJECT_DIR }}/orch_schedules.sql
