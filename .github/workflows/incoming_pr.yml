@@ -33,12 +33,12 @@ jobs:
         
       - name: Check Snowflake CLI Version
         run: snow --version
-      
-      # The -x is short hand for --temporary-connection
-      - run: snow connection test -x
 
       - name: List all users with OIDC federation enabled on your account
         run: snow auth oidc list -x
+      
+      # The -x is short hand for --temporary-connection
+      - run: snow connection test -x
 
       # The --force setting creates the object or updates it if it already exists
       # You can remove the "-- source" flag if your dbt_project.yml is at root of your repo
