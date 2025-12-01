@@ -47,6 +47,9 @@ jobs:
       - name: list files in directory
         run: ls $DBT_PROJECT_DIR
 
+      - name: Install requirements
+        run: pip install -r requirements.txt  
+
       - name: Install dbt dependencies
         run: dbt deps
 
