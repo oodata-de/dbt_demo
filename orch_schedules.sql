@@ -94,4 +94,4 @@ WHEN NOT MATCHED THEN
           source.cron_expression, source.dbt_project, source.env, source.is_active);
 
 -- Call the stored procedure
-CALL  dbt_prod.sch_dbt_test.sync_dbt_tasks(&{DB_NAME});
+CALL  dbt_prod.sch_dbt_test.sync_dbt_tasks(db_name);
