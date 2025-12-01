@@ -24,4 +24,4 @@ dbt_demo:
       authenticator: SNOWFLAKE_JWT
       private_key_path: ${SNOWFLAKE_PRIVATE_KEY_PATH}
       private_key: ${SNOWFLAKE_PRIVATE_KEY_RAW}
-      query_tag: demo_dbt_prd
+      query_tag: demo_dbt_prod
