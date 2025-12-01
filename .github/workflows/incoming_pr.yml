@@ -1,0 +1,55 @@
+name: Incoming PR
+run-name: PR opened by ${{ github.actor }} 
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review] 
+    branches: [main]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  run-snowflake-test-dbt-job:
+    name: "Run on Incoming PR"
+    runs-on: ubuntu-latest
+    environment: prod # the name of this environment must match the subject of the OIDC user
+    env: 
+      SNOWFLAKE_CLI_FEATURES_ENABLE_DBT: true
+      SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+      SNOWFLAKE_DATABASE: ${{ vars.SNOWFLAKE_DATABASE_PROD }}
+      SNOWFLAKE_SCHEMA: ${{ vars.SNOWFLAKE_SCHEMA }}
+
+    steps:
+      # Check out repository code
+      # Gets the latest code from the incoming pull request
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
+      - name: Install Snowflake CLI
+        uses: snowflakedb/snowflake-cli-action@v2.0
+        with: # Ensures Snowflake CLI will search for OIDC users matching this subject
+          use-oidc: true
+        
+      - name: Check Snowflake CLI Version
+        run: snow --version
+      
+      # The -x is short hand for --temporary-connection
+      - run: snow connection test -x
+
+      - name: List all users with OIDC federation enabled on your account
+        run: snow auth oidc list -x
+
+      # The --force setting creates the object or updates it if it already exists
+      # You can remove the "-- source" flag if your dbt_project.yml is at root of your repo
+      - name: Create a new TESTER dbt project object in ${{ vars.SNOWFLAKE_ACCOUNT }} on ${{ vars.SNOWFLAKE_DATABASE }}.${{ vars.SNOWFLAKE_SCHEMA }}
+        run: snow dbt deploy TESTER_dbt_object_gh_action --force -x
+          
+      - name: List all of the snowflake dbt project objects on ${{ vars.SNOWFLAKE_ACCOUNT }}
+        run: snow dbt list -x
+      
+      - name: Execute run on TESTER dbt project object in ${{ vars.SNOWFLAKE_ACCOUNT }} on ${{ vars.SNOWFLAKE_DATABASE }}.${{ vars.SNOWFLAKE_SCHEMA }}
+        run: snow dbt execute -x TESTER_dbt_object_gh_action run --select path:models\example\dependency --target dev
+
+      - name: Execute data quality test on TESTER dbt project object in ${{ vars.SNOWFLAKE_ACCOUNT }} on ${{ vars.SNOWFLAKE_DATABASE }}.${{ vars.SNOWFLAKE_SCHEMA }}
+        run: snow dbt execute -x TESTER_dbt_object_gh_action test --select path:models\example\dependency --target dev
