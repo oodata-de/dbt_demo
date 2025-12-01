@@ -9,7 +9,7 @@ jobs:
   run-snowflake-test-dbt-job:
     name: "Run on Incoming PR"
     runs-on: ubuntu-latest
-    environment: prod # the name of this environment must match the subject of the OIDC user
+    # environment: prod # the name of this environment must match the subject of the OIDC user
     env: 
       SNOWFLAKE_CLI_FEATURES_ENABLE_DBT: true
       SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
@@ -42,9 +42,8 @@ jobs:
       - name: CHnage to directory
         run: cd $DBT_PROJECT_DIR
       
-      # The -x is short hand for --temporary-connection
       - name: Test connection
-        run: snow connection test -x
+        run: snow connection test --temporary-connection --account $SNOWFLAKE_ACCOUNT --user $SNOWFLAKE_USER --role $SNOWFLAKE_ROLE --warehouse $SNOWFLAKE_WAREHOUSE --database $SNOWFLAKE_DATABASE --schema $SNOWFLAKE_SCHEMA
 
       - name: Install dbt dependencies
         run: dbt deps
