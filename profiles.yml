@@ -10,8 +10,8 @@ dbt_demo:
     warehouse: DEVELOPMENT # Replace with your active warehouse name, e.g., CICD_WH
     user: ${SNOWFLAKE_USER}  # Put any value here, it will be overwritten by a GitHub Repo Secret
     authenticator: SNOWFLAKE_JWT
-    SNOWFLAKE_PRIVATE_KEY_RAW: ${SNOWFLAKE_PRIVATE_KEY}
-    PRIVATE_KEY_PATH: ${SNOWFLAKE_PRIVATE_KEY_PATH}
+    SNOWFLAKE_PRIVATE_KEY_RAW: ${SNOWFLAKE_PRIVATE_KEY_RAW}
+    SNOWFLAKE_PRIVATE_KEY_PATH: ${SNOWFLAKE_PRIVATE_KEY_PATH}
     query_tag: demo_dbt_dev
   prod:
     type: snowflake
@@ -22,6 +22,6 @@ dbt_demo:
     warehouse: PRODUCTION
     user: ${SNOWFLAKE_USER}
     authenticator: SNOWFLAKE_JWT
-    SNOWFLAKE_PRIVATE_KEY_RAW: ${SNOWFLAKE_PRIVATE_KEY}
-    PRIVATE_KEY_PATH: ${SNOWFLAKE_PRIVATE_KEY_PATH}
+    SNOWFLAKE_PRIVATE_KEY_RAW: ${SNOWFLAKE_PRIVATE_KEY_RAW}
+    SNOWFLAKE_PRIVATE_KEY_PATH: ${SNOWFLAKE_PRIVATE_KEY_PATH}
     query_tag: demo_dbt_prod
