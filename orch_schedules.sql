@@ -1,7 +1,6 @@
-USE DATABASE DBT_PROD;
 USE SCHEMA SCH_DBT_TEST;
 
-CREATE OR REPLACE TABLE dbt_prod.sch_dbt_test.dbt_model_run_selector (
+CREATE OR REPLACE TABLE sch_dbt_test.dbt_model_run_selector (
     id NUMBER(10,0) AUTOINCREMENT START 1 INCREMENT 1,
     task_name       STRING,                     -- suffix used in DBT_TASK_<task_name>
     task_schema     STRING,
@@ -16,79 +15,83 @@ CREATE OR REPLACE TABLE dbt_prod.sch_dbt_test.dbt_model_run_selector (
 );
 
 -- Procedure that scans active selectors and creates/refreshes Snowflake tasks per selector.
-CREATE OR REPLACE PROCEDURE dbt_prod.sch_dbt_test.sync_dbt_tasks()
-RETURNS VARCHAR
-LANGUAGE SQL
+CREATE OR REPLACE PROCEDURE sch_dbt_test.sync_dbt_tasks(dbt_database STRING)
+RETURNS STRING
+LANGUAGE JAVASCRIPT
 EXECUTE AS CALLER
 AS
 $$
-DECLARE
-    c_active CURSOR FOR
-        SELECT task_name,
-               task_schema,
-               run_selector,
-               run_type,
-               cron_expression,
-               dbt_project,
-               env
-        FROM dbt_prod.sch_dbt_test.dbt_model_run_selector
-        WHERE is_active;
+const dbName = DBT_DATABASE;  // parameter auto-uppercased
 
-    v_task_name STRING;
-    v_task_schema STRING;
-    v_sql       STRING;
-    -- v_seen      STRING := '';
-    v_args      STRING;
-    v_resume    STRING;
-BEGIN
-    FOR rec IN c_active DO
-        v_task_name := 'DBT_TASK_' || rec.task_name;
-        v_task_schema := rec.task_schema;
+const selectorTable = `${dbName}.sch_dbt_test.dbt_model_run_selector`;
+const selectSql = `
+  SELECT task_name, task_schema, run_selector, run_type,
+         cron_expression, dbt_project, env
+  FROM ${selectorTable}
+  WHERE is_active
+`;
+const rs = snowflake.createStatement({ sqlText: selectSql }).execute();
 
-        IF (rec.run_type LIKE 'group-selector%') THEN
-            v_args := 'run --selector ' || rec.run_selector;
-        ELSE
-            v_args := 'run --select ' || rec.run_selector;
-        END IF;
-        v_args := v_args || ' --target ' || rec.env;
+while (rs.next()) {
+  const taskName   = 'DBT_TASK_' + rs.getColumnValue('TASK_NAME');
+  const taskSchema = rs.getColumnValue('TASK_SCHEMA');
+  const runType    = rs.getColumnValue('RUN_TYPE');
+  const selector   = rs.getColumnValue('RUN_SELECTOR');
+  const cron       = rs.getColumnValue('CRON_EXPRESSION');
+  const dbtProj    = rs.getColumnValue('DBT_PROJECT');
+  const env        = rs.getColumnValue('ENV');
 
-        v_sql := 'CREATE OR REPLACE TASK dbt_prod.' || v_task_schema || '.' || v_task_name || '
-                  WAREHOUSE = COMPUTE_WH
-                  SCHEDULE = ''' || rec.cron_expression || '''
-                  USER_TASK_TIMEOUT_MS = 3600000
-                  AS
-                  EXECUTE DBT PROJECT ' || rec.dbt_project || '
-                      ARGS = ''' || v_args || ''';';
+  const args = (runType.startsWith('group-selector')
+               ? `run --selector ${selector}`
+               : `run --select ${selector}`) + ` --target ${env}`;
 
-        EXECUTE IMMEDIATE v_sql;
+  const createTaskSql = `
+    CREATE OR REPLACE TASK ${dbName}.${taskSchema}.${taskName}
+      WAREHOUSE = COMPUTE_WH
+      SCHEDULE = '${cron}'
+      USER_TASK_TIMEOUT_MS = 3600000
+    AS
+      EXECUTE DBT PROJECT ${dbtProj}
+        ARGS = '${args}'
+  `;
+  snowflake.createStatement({ sqlText: createTaskSql }).execute();
 
-        v_resume := 'ALTER TASK dbt_prod.' || v_task_schema || '.' || v_task_name || ' RESUME;';
+  const resumeSql = `ALTER TASK ${dbName}.${taskSchema}.${taskName} RESUME`;
+  snowflake.createStatement({ sqlText: resumeSql }).execute();
+}
 
-        EXECUTE IMMEDIATE v_resume;
-        
-    END FOR;
-
-    RETURN 'Tasks created';
-END;
+return 'Tasks created';
 $$;
 
--- INSERT INTO dbt_prod.sch_dbt_test.dbt_model_run_selector
---     (task_name, task_schema, run_selector, run_type, cron_expression, dbt_project, env, is_active)
--- VALUES
---     ('f1', 'sch_dbt_test', 'f1', 'individual', 'USING CRON 0 21 * * * Canada/Pacific', 'dbt_prod.sch_dbt_test.prod_dbt_object_gh_action', 'prod', TRUE),
---     ('domain_dependency', 'sch_dbt_test', 'path:models/example/dependency', 'group', 'USING CRON 0 21 * * * Canada/Pacific', 'dbt_prod.sch_dbt_test.prod_dbt_object_gh_action', 'prod', TRUE);
-
-
-MERGE INTO dbt_prod.sch_dbt_test.dbt_model_run_selector AS target
+SET db_name = '&{DB_NAME}';
+MERGE INTO sch_dbt_test.dbt_model_run_selector AS target
 USING (
-  VALUES
-  ('f1', 'sch_dbt_test', 'f1', 'individual', 'USING CRON 0 21 * * * Canada/Pacific', 'dbt_prod.sch_dbt_test.prod_dbt_object_gh_action', 'prod', TRUE),
-  ('domain_dependency', 'sch_dbt_test', 'path:models/example/dependency', 'group', 'USING CRON 0 21 * * * Canada/Pacific', 'dbt_prod.sch_dbt_test.prod_dbt_object_gh_action', 'prod', TRUE)
-) AS source (task_name, task_schema, run_selector, run_type, cron_expression, dbt_project, env, is_active)
-ON target.task_name = source.task_name AND target.task_schema = source.task_schema
+    SELECT
+        'f1' AS task_name,
+        'sch_dbt_test' AS task_schema,
+        'f1' AS run_selector,
+        'individual' AS run_type,
+        'USING CRON 0 1 * * * Canada/Pacific' AS cron_expression,
+        CONCAT($db_name, '.sch_dbt_test.dbt_object_gh_action') AS dbt_project,
+        'prod' AS env,
+        TRUE AS is_active
+    UNION ALL
+    SELECT
+        'domain_dependency',
+        'sch_dbt_test',
+        'path:models/example/dependency',
+        'group',
+        'USING CRON 0 1 * * * Canada/Pacific',
+        CONCAT($db_name, '.sch_dbt_test.dbt_object_gh_action'),
+        'prod',
+        TRUE
+) source
+ON target.task_name = source.task_name
+ AND target.task_schema = source.task_schema
 WHEN NOT MATCHED THEN
   INSERT (task_name, task_schema, run_selector, run_type, cron_expression, dbt_project, env, is_active)
-  VALUES (source.task_name, source.task_schema, source.run_selector, source.run_type, source.cron_expression, source.dbt_project, source.env, source.is_active);
+  VALUES (source.task_name, source.task_schema, source.run_selector, source.run_type,
+          source.cron_expression, source.dbt_project, source.env, source.is_active);
 
 -- Call the stored procedure
-CALL  dbt_prod.sch_dbt_test.sync_dbt_tasks();
+CALL  dbt_prod.sch_dbt_test.sync_dbt_tasks(db_name);
