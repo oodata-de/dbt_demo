@@ -71,12 +71,6 @@ BEGIN
 END;
 $$;
 
--- INSERT INTO dbt_prod.sch_dbt_test.dbt_model_run_selector
---     (task_name, task_schema, run_selector, run_type, cron_expression, dbt_project, env, is_active)
--- VALUES
---     ('f1', 'sch_dbt_test', 'f1', 'individual', 'USING CRON 0 21 * * * Canada/Pacific', 'dbt_prod.sch_dbt_test.prod_dbt_object_gh_action', 'prod', TRUE),
---     ('domain_dependency', 'sch_dbt_test', 'path:models/example/dependency', 'group', 'USING CRON 0 21 * * * Canada/Pacific', 'dbt_prod.sch_dbt_test.prod_dbt_object_gh_action', 'prod', TRUE);
-
 
 MERGE INTO sch_dbt_test.dbt_model_run_selector AS target
 USING (
